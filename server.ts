@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
-import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
+import {serve} from "https://deno.land/std@0.106.0/http/server.ts";
+import {v4} from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
     acceptWebSocket,
     isWebSocketCloseEvent,
@@ -10,8 +10,7 @@ const sockets = new Map<string, WebSocket>()
 
 const broadCastPoints = (message: string, uid: string) => {
     sockets.forEach((socket) => {
-        if (!socket.isClosed && uid !== id)
-            socket.send(message)
+        socket.send(message)
     })
 }
 
@@ -24,12 +23,12 @@ async function handleWs(sock: WebSocket) {
             if (typeof ev === "string") {
                 // text message.
                 console.log(ev)
-                broadCastPoints(ev,uid)
+                broadCastPoints(ev, uid)
                 await sock.send(ev);
             } else if (isWebSocketCloseEvent(ev)) {
                 // close.
                 sockets.delete(uid)
-                const { code, reason } = ev;
+                const {code, reason} = ev;
                 console.log("ws:Close", code, reason);
             }
         }
@@ -47,7 +46,7 @@ if (import.meta.main) {
     const port = Deno.args[0] || "8080";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
-        const { conn, r: bufReader, w: bufWriter, headers } = req;
+        const {conn, r: bufReader, w: bufWriter, headers} = req;
         acceptWebSocket({
             conn,
             bufReader,
