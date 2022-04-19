@@ -3,8 +3,6 @@ import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
     acceptWebSocket,
     isWebSocketCloseEvent,
-    isWebSocketPingEvent,
-    isWebSocketPongEvent,
     WebSocket,
 } from "https://deno.land/std@0.106.0/ws/mod.ts";
 
