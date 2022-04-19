@@ -42,7 +42,7 @@ async function handleWs(sock: WebSocket) {
 
 if (import.meta.main) {
     /** websocket echo server */
-    const port = Deno.args[0] || "8080";
+    const port = Deno.args[0] || "6060";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
         const { conn, r: bufReader, w: bufWriter, headers } = req;
