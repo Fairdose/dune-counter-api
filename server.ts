@@ -8,32 +8,33 @@ import {
 
 const sockets = new Map<string, WebSocket>()
 
-const broadCastPoints = (message: string, uid: string, id: any) => {
+const broadCastPoints = (message: string, uid: string) => {
     sockets.forEach((socket) => {
-        if (!socket.isClosed && uid !== id)
+        if (!socket.isClosed && sockets.get(uid) !== socket)
             socket.send(message)
     })
 }
 
 async function handleWs(sock: WebSocket) {
-    console.log("socket connected!");
     const uid = v4.generate()
     sockets.set(uid, sock)
     try {
         for await (const ev of sock) {
             if (typeof ev === "string") {
-                broadCastPoints(ev,uid, 'sd')
+                broadCastPoints(ev,uid)
                 await sock.send(ev);
             }
             if (isWebSocketCloseEvent(ev)) {
                 sockets.delete(uid)
-                const { code, reason } = ev;
-                console.log("ws:Close", code, reason);
+                if (ev?.reason) {
+                    const { code, reason } = ev;
+                    console.log("ws:Close", code, reason);
+                }
                 return
             }
         }
     } catch (err) {
-        console.error(`failed to receive frame: ${err}`);
+        console.error(err);
         if (!sock.isClosed) {
             await sock.close(1000).catch(console.error);
         }
@@ -41,7 +42,6 @@ async function handleWs(sock: WebSocket) {
 }
 
 if (import.meta.main) {
-    /** websocket echo server */
     const port = Deno.args[0] || "6060";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
