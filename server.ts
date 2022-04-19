@@ -3,6 +3,8 @@ import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
     acceptWebSocket,
     isWebSocketCloseEvent,
+    isWebSocketPingEvent,
+    isWebSocketPongEvent,
     WebSocket,
 } from "https://deno.land/std@0.106.0/ws/mod.ts";
 
@@ -18,6 +20,7 @@ const broadCastPoints = (message: string, uid: string) => {
 async function handleWs(sock: WebSocket) {
     const uid = v4.generate()
     sockets.set(uid, sock)
+    console.log('new user joined')
     try {
         for await (const ev of sock) {
             if (typeof ev === "string") {
@@ -30,7 +33,6 @@ async function handleWs(sock: WebSocket) {
                     const { code, reason } = ev;
                     console.log("ws:Close", code, reason);
                 }
-                return
             }
         }
     } catch (err) {
@@ -45,17 +47,14 @@ if (import.meta.main) {
     const port = Deno.args[0] || "6060";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
-        const { conn, r: bufReader, w: bufWriter, headers } = req;
-        acceptWebSocket({
-            conn,
-            bufReader,
-            bufWriter,
-            headers,
-        })
-            .then(handleWs)
-            .catch(async function (err) {
-                console.error(`failed to accept websocket: ${err}`);
-                await req.respond({status: 400});
-            });
+        const {conn, r: bufReader, w: bufWriter, headers} = req;
+        const wSocket = await acceptWebSocket({ conn, bufReader, bufWriter, headers })
+
+        try {
+            handleWs(wSocket)
+        } catch (e) {
+            console.error(`failed to accept websocket: ${e}`);
+            await req.respond({status: 400});
+        }
     }
 }
