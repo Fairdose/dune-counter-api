@@ -1,5 +1,5 @@
-import {serve} from "https://deno.land/std@0.106.0/http/server.ts";
-import {v4} from "https://deno.land/std@0.78.0/uuid/mod.ts";
+import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
+import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
     acceptWebSocket,
     isWebSocketCloseEvent,
@@ -8,9 +8,10 @@ import {
 
 const sockets = new Map<string, WebSocket>()
 
-const broadCastPoints = (message: string, uid: string) => {
+const broadCastPoints = (message: string, uid: string, id: any) => {
     sockets.forEach((socket) => {
-        socket.send(message)
+        if (!socket.isClosed && uid !== id)
+            socket.send(message)
     })
 }
 
@@ -21,20 +22,18 @@ async function handleWs(sock: WebSocket) {
     try {
         for await (const ev of sock) {
             if (typeof ev === "string") {
-                // text message.
-                console.log(ev)
-                broadCastPoints(ev, uid)
+                broadCastPoints(ev,uid, 'sd')
                 await sock.send(ev);
-            } else if (isWebSocketCloseEvent(ev)) {
-                // close.
+            }
+            if (isWebSocketCloseEvent(ev)) {
                 sockets.delete(uid)
-                const {code, reason} = ev;
+                const { code, reason } = ev;
                 console.log("ws:Close", code, reason);
+                return
             }
         }
     } catch (err) {
         console.error(`failed to receive frame: ${err}`);
-
         if (!sock.isClosed) {
             await sock.close(1000).catch(console.error);
         }
@@ -46,7 +45,7 @@ if (import.meta.main) {
     const port = Deno.args[0] || "8080";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
-        const {conn, r: bufReader, w: bufWriter, headers} = req;
+        const { conn, r: bufReader, w: bufWriter, headers } = req;
         acceptWebSocket({
             conn,
             bufReader,
