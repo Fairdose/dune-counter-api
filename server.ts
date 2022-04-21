@@ -3,6 +3,7 @@ import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
     acceptWebSocket,
     isWebSocketCloseEvent,
+    isWebSocketPingEvent,
     WebSocket,
 } from "https://deno.land/std@0.106.0/ws/mod.ts";
 
@@ -21,7 +22,12 @@ async function handleWs(sock: WebSocket) {
     console.log('new user joined')
     try {
         for await (const ev of sock) {
+            if (isWebSocketPingEvent(ev)) {
+                const [, body] = ev;
+                console.log("ws:Ping", body);
+            }
             if (typeof ev === "string") {
+                console.log(ev)
                 broadCastPoints(ev,uid)
                 await sock.send(ev);
             }
