@@ -7,3 +7,6 @@ export {
     isWebSocketPingEvent,
     type WebSocket
 } from "https://deno.land/std@0.106.0/ws/mod.ts";
+
+import { config } from "https://deno.land/x/dotenv@v3.2.0/mod.ts";
+export const conf = config()

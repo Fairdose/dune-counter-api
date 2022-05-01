@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
 import {
+    conf,
     v4,
     acceptWebSocket,
     isWebSocketCloseEvent,
     isWebSocketPingEvent,
-    WebSocket
+    WebSocket,
+    Application,
+    Router
 } from "./libraries.ts";
 
 /* This declaration is for TypeScript error */
@@ -54,8 +57,9 @@ async function handleWs(sock: WebSocket) {
     }
 }
 
+const port = conf.SERVER_PORT ?? 6060;
+
 if (import.meta.main) {
-    const port = Deno.args[0] || "6060";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
         const {conn, r: bufReader, w: bufWriter, headers} = req;
