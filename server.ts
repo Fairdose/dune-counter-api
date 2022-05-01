@@ -6,7 +6,6 @@ import {
     isWebSocketCloseEvent,
     isWebSocketPingEvent,
     WebSocket,
-    Application,
     Router
 } from "./libraries.ts";
 
@@ -62,14 +61,18 @@ const port = conf.SERVER_PORT ?? 6060;
 if (import.meta.main) {
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
-        const {conn, r: bufReader, w: bufWriter, headers} = req;
-        const wSocket = await acceptWebSocket({ conn, bufReader, bufWriter, headers })
-
-        try {
-            handleWs(wSocket)
-        } catch (e) {
-            console.error(`failed to accept websocket: ${e}`);
-            await req.respond({status: 400});
+        if (req.headers.hasOwnProperty('upgrade')) {
+            const {conn, r: bufReader, w: bufWriter, headers} = req;
+            const wSocket = await acceptWebSocket({ conn, bufReader, bufWriter, headers })
+            try {
+                handleWs(wSocket)
+            } catch (e) {
+                console.error(`failed to accept websocket: ${e}`);
+                await req.respond({status: 400});
+            }
+        } else {
+            console.log('other req')
+            new Response('responded')
         }
     }
 }
