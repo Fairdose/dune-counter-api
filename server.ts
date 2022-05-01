@@ -1,11 +1,20 @@
 import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
-import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
+    conf,
+    v4,
     acceptWebSocket,
     isWebSocketCloseEvent,
     isWebSocketPingEvent,
     WebSocket,
-} from "https://deno.land/std@0.106.0/ws/mod.ts";
+    Router
+} from "./libraries.ts";
+
+/* This declaration is for TypeScript error */
+declare global {
+    interface ReadableStream<R> {
+        getIterator(): any
+    }
+}
 
 const sockets = new Map<string, WebSocket>()
 
@@ -47,18 +56,23 @@ async function handleWs(sock: WebSocket) {
     }
 }
 
+const port = conf.SERVER_PORT ?? 6060;
+
 if (import.meta.main) {
-    const port = Deno.args[0] || "6060";
     console.log(`websocket server is running on :${port}`);
     for await (const req of serve(`:${port}`)) {
-        const {conn, r: bufReader, w: bufWriter, headers} = req;
-        const wSocket = await acceptWebSocket({ conn, bufReader, bufWriter, headers })
-
-        try {
-            handleWs(wSocket)
-        } catch (e) {
-            console.error(`failed to accept websocket: ${e}`);
-            await req.respond({status: 400});
+        if (req.headers.hasOwnProperty('upgrade')) {
+            const {conn, r: bufReader, w: bufWriter, headers} = req;
+            const wSocket = await acceptWebSocket({ conn, bufReader, bufWriter, headers })
+            try {
+                handleWs(wSocket)
+            } catch (e) {
+                console.error(`failed to accept websocket: ${e}`);
+                await req.respond({status: 400});
+            }
+        } else {
+            console.log('other req')
+            new Response('responded')
         }
     }
 }
