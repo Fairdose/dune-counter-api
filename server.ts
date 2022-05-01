@@ -1,11 +1,18 @@
 import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
-import { v4 } from "https://deno.land/std@0.78.0/uuid/mod.ts";
 import {
+    v4,
     acceptWebSocket,
     isWebSocketCloseEvent,
     isWebSocketPingEvent,
-    WebSocket,
-} from "https://deno.land/std@0.106.0/ws/mod.ts";
+    WebSocket
+} from "./libraries.ts";
+
+/* This declaration is for TypeScript error */
+declare global {
+    interface ReadableStream<R> {
+        getIterator(): any
+    }
+}
 
 const sockets = new Map<string, WebSocket>()
 
