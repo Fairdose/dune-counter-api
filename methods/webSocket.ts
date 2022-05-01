@@ -1,15 +1,21 @@
-import {v4, isWebSocketCloseEvent, isWebSocketPingEvent, WebSocket} from "../libraries.ts";
+import {
+    v4,
+    isWebSocketCloseEvent,
+    isWebSocketPingEvent,
+    WebSocket
+} from "../libraries.ts";
 
-export const sockets = new Map<string, WebSocket>()
 
-export const broadCast = (message: string, uid: string) => {
+const sockets = new Map<string, WebSocket>()
+
+const broadCastPoints = (message: string, uid: string) => {
     sockets.forEach((socket) => {
         if (!socket.isClosed && sockets.get(uid) !== socket)
             socket.send(message)
     })
 }
 
-export const handleWs = async (sock: WebSocket) => {
+export async function handleWs(sock: WebSocket) {
     const uid = v4.generate()
     sockets.set(uid, sock)
     console.log('new user joined')
@@ -21,7 +27,7 @@ export const handleWs = async (sock: WebSocket) => {
             }
             if (typeof ev === "string") {
                 console.log(ev)
-                broadCast(ev, uid)
+                broadCastPoints(ev, uid)
                 await sock.send(ev);
             }
             if (isWebSocketCloseEvent(ev)) {

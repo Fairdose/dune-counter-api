@@ -1,13 +1,11 @@
-import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
+import "https://deno.land/std@0.135.0/dotenv/load.ts";
 import {
-    conf,
+    serve,
     v4,
-    acceptWebSocket,
-    isWebSocketCloseEvent,
-    isWebSocketPingEvent,
-    WebSocket,
-    Router
+    Router,
+    acceptWebSocket
 } from "./libraries.ts";
+import { handleWs } from "./methods/webSocket.ts";
 
 /* This declaration is for TypeScript error */
 declare global {
@@ -16,50 +14,22 @@ declare global {
     }
 }
 
-const sockets = new Map<string, WebSocket>()
+const port = Deno.env.get("SERVER_PORT") ?? 6060;
 
-const broadCastPoints = (message: string, uid: string) => {
-    sockets.forEach((socket) => {
-        if (!socket.isClosed && sockets.get(uid) !== socket)
-            socket.send(message)
-    })
-}
+const routes = new Router()
 
-async function handleWs(sock: WebSocket) {
-    const uid = v4.generate()
-    sockets.set(uid, sock)
-    console.log('new user joined')
-    try {
-        for await (const ev of sock) {
-            if (isWebSocketPingEvent(ev)) {
-                const [, body] = ev;
-                console.log("ws:Ping", body);
-            }
-            if (typeof ev === "string") {
-                console.log(ev)
-                broadCastPoints(ev,uid)
-                await sock.send(ev);
-            }
-            if (isWebSocketCloseEvent(ev)) {
-                sockets.delete(uid)
-                if (ev?.reason) {
-                    const { code, reason } = ev;
-                    console.log("ws:Close", code, reason);
-                }
-            }
-        }
-    } catch (err) {
-        console.error(err);
-        if (!sock.isClosed) {
-            await sock.close(1000).catch(console.error);
-        }
-    }
-}
-
-const port = conf.SERVER_PORT ?? 6060;
+routes.get("", async (r: Request, p: Record<string, string>) => {
+    console.log(r)
+    return new Response("Hello from / handler");
+});
 
 if (import.meta.main) {
     console.log(`websocket server is running on :${port}`);
+
+    await serve(async(r) =>
+        await routes.route(r))
+
+    /*
     for await (const req of serve(`:${port}`)) {
         if (req.headers.hasOwnProperty('upgrade')) {
             const {conn, r: bufReader, w: bufWriter, headers} = req;
@@ -75,4 +45,5 @@ if (import.meta.main) {
             new Response('responded')
         }
     }
+     */
 }
