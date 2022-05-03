@@ -6,7 +6,7 @@ const rooms = new Map<string, typeof sockets>()
 
 console.log(rooms)
 
-const broadCast = (message: string, uid: string) => {
+const broadcast = (message: string, uid: string) => {
     sockets.forEach((socket) => {
         if (socket.readyState === 1 && sockets.get(uid) !== socket)
             socket.send(message)
@@ -23,7 +23,7 @@ const handler = (req: Request): Response => {
         console.log('new user')
 
         ws.onmessage = (req) => {
-            broadCast(req.data, uid)
+            broadcast(req.data, uid)
         }
         ws.onclose = (req) => {
             sockets.delete(uid)
