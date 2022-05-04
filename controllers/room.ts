@@ -1,7 +1,18 @@
 import {WSState} from "../enums/ws_states.ts";
 
-export const sockets = new Map<string, any>()
 export const rooms = new Map<string|null, any>()
+
+export const events = Object.freeze({
+    adminJoined: () => {
+
+    },
+    broadcast: () => {
+
+    },
+    ping: () => {
+
+    }
+})
 
 export const broadcast = (message: string, uid: string, room: any) => {
     const users = rooms.get(room)
