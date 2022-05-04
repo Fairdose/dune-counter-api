@@ -1,78 +1,42 @@
-import { serve } from "https://deno.land/std@0.106.0/http/server.ts";
-import {
-    conf,
-    v4,
-    acceptWebSocket,
-    isWebSocketCloseEvent,
-    isWebSocketPingEvent,
-    WebSocket,
-    Router
-} from "./libraries.ts";
-
-/* This declaration is for TypeScript error */
-declare global {
-    interface ReadableStream<R> {
-        getIterator(): any
-    }
-}
+import "https://deno.land/x/dotenv/load.ts"
+import {serve, v4} from "./libraries.ts"
 
 const sockets = new Map<string, WebSocket>()
+const rooms = new Map<string, typeof sockets>()
 
-const broadCastPoints = (message: string, uid: string) => {
+console.log(rooms)
+
+const broadcast = (message: string, uid: string) => {
     sockets.forEach((socket) => {
-        if (!socket.isClosed && sockets.get(uid) !== socket)
+        if (socket.readyState === 1 && sockets.get(uid) !== socket)
             socket.send(message)
     })
 }
 
-async function handleWs(sock: WebSocket) {
-    const uid = v4.generate()
-    sockets.set(uid, sock)
-    console.log('new user joined')
-    try {
-        for await (const ev of sock) {
-            if (isWebSocketPingEvent(ev)) {
-                const [, body] = ev;
-                console.log("ws:Ping", body);
-            }
-            if (typeof ev === "string") {
-                console.log(ev)
-                broadCastPoints(ev,uid)
-                await sock.send(ev);
-            }
-            if (isWebSocketCloseEvent(ev)) {
-                sockets.delete(uid)
-                if (ev?.reason) {
-                    const { code, reason } = ev;
-                    console.log("ws:Close", code, reason);
-                }
-            }
+const handler = (req: Request): Response => {
+    if (req.headers.get("upgrade") === "websocket") {
+        const u = new URL(req.url)
+        console.log(new URL(req.url).searchParams)
+        const { socket: ws, response } = Deno.upgradeWebSocket(req)
+        const uid = v4.generate()
+        sockets.set(uid, ws)
+        console.log('new user')
+
+        ws.onmessage = (req) => {
+            broadcast(req.data, uid)
         }
-    } catch (err) {
-        console.error(err);
-        if (!sock.isClosed) {
-            await sock.close(1000).catch(console.error);
+        ws.onclose = (req) => {
+            sockets.delete(uid)
         }
+
+        return response
     }
+
+    return new Response(null, {status: 501})
 }
 
-const port = conf.SERVER_PORT ?? 6060;
+const port = Number(Deno.env.get('SERVER_PORT')) ?? 6060
 
-if (import.meta.main) {
-    console.log(`websocket server is running on :${port}`);
-    for await (const req of serve(`:${port}`)) {
-        if (req.headers.hasOwnProperty('upgrade')) {
-            const {conn, r: bufReader, w: bufWriter, headers} = req;
-            const wSocket = await acceptWebSocket({ conn, bufReader, bufWriter, headers })
-            try {
-                handleWs(wSocket)
-            } catch (e) {
-                console.error(`failed to accept websocket: ${e}`);
-                await req.respond({status: 400});
-            }
-        } else {
-            console.log('other req')
-            new Response('responded')
-        }
-    }
-}
+console.log(`server listening on http://localhost:${port}`)
+
+await serve(handler, {port})
