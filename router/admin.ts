@@ -1,1 +1,0 @@
-const adminRoute = new Router()
