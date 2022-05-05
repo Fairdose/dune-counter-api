@@ -1,20 +1,18 @@
-import "https://deno.land/x/dotenv/load.ts"
 import { Server } from "./libraries.ts"
 import { handleWs } from "./controllers/webSocket.ts"
 
-const port = Number(Deno.env.get('SERVER_PORT')) ?? 6060
-
-const listener = Deno.listen({ port })
+const listener = Deno.listen({ port: Number(Deno.args) })
 
 const handler = (req: Request): Response => {
     if (req.headers.get("upgrade") === "websocket") {
         return handleWs(req)
     }
-    return new Response(null, {status: 501})
+    console.log(req)
+    return new Response(`${req}`)
 }
 
 const server = new Server({handler})
 
-console.log(`server listening on http://localhost:${port}`)
+console.log(`server listening on http://localhost:${Deno.args}`)
 
 await server.serve(listener)
