@@ -1,5 +1,5 @@
 import { v4 } from "../libraries.ts";
-import { broadcast, rooms } from "./room.ts";
+import { wsEvents, rooms } from "./room.ts";
 
 export const handleWs = (req: Request) => {
     const params = new URLSearchParams(req.url)
@@ -23,7 +23,8 @@ export const handleWs = (req: Request) => {
     }
 
     ws.onmessage = (req) => {
-        broadcast(req.data, uid, room)
+        const { eventType, message } = req.data
+        wsEvents.broadcast(req.data, uid, room)
     }
 
     ws.onclose = () => {
