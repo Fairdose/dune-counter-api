@@ -23,7 +23,6 @@ export const handleWs = (req: Request) => {
     }
 
     ws.onmessage = (req) => {
-        const { eventType, message } = req.data
         wsEvents.broadcast(req.data, uid, room)
     }
 
